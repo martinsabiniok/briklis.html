@@ -876,8 +876,14 @@ async function sendEmail() {
         subject: `Nová poptávka z veletrhu: ${d.firma || d.kontakt || 'nový kontakt'}`,
         html_content: lines,
         firma: d.firma || '',
+        ico: d.ico || '',
         kontakt: d.kontakt || '',
+        pozice: d.pozice || '',
+        telefon: d.telefon || '',
+        email: d.email || '',
+        adresa: d.adresa || '',
         veletrh: d.veletrh || '',
+        poznamky: d.poznamky || '',
       };
       await emailjs.send(svcId, tplId, params);
     }
