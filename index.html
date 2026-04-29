@@ -857,14 +857,29 @@ async function sendEmail() {
   try {
     emailjs.init(pubKey);
     for (const rcpt of checked) {
-      await emailjs.send(svcId, tplId, {
+      const lines = [
+        d.veletrh   ? `Veletrh: ${d.veletrh}` : '',
+        d.firma     ? `Firma: ${d.firma}` : '',
+        d.ico       ? `IČO: ${d.ico}` : '',
+        d.adresa    ? `Adresa: ${d.adresa}` : '',
+        '---',
+        d.kontakt   ? `Kontakt: ${d.kontakt}` : '',
+        d.pozice    ? `Pozice: ${d.pozice}` : '',
+        d.telefon   ? `Telefon: ${d.telefon}` : '',
+        d.email     ? `E-mail: ${d.email}` : '',
+        d.poznamky  ? `Poznámky: ${d.poznamky}` : '',
+        '---',
+        `Odesláno na: ${rcpt}`,
+      ].filter(l => l && l !== '---' || l === '---').join('\n');
+      const params = {
         to_email: rcpt,
         subject: `Nová poptávka z veletrhu: ${d.firma || d.kontakt || 'nový kontakt'}`,
-        html_content: buildEmail({...d, recipient: rcpt}),
-        firma: d.firma,
-        kontakt: d.kontakt,
-        veletrh: d.veletrh,
-      });
+        html_content: lines,
+        firma: d.firma || '',
+        kontakt: d.kontakt || '',
+        veletrh: d.veletrh || '',
+      };
+      await emailjs.send(svcId, tplId, params);
     }
     setStatus('sendStatus', `✓ Odesláno (${checked.length} příjemce${checked.length > 1 ? 'm' : ''})`, 'ok');
     setStep(3);
