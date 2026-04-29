@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Briklis — Veletržní karty</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #EEF2F7;
+    --surface: #FFFFFF;
+    --surface2: #E6EDF5;
+    --border: rgba(0,51,102,0.10);
+    --border-strong: rgba(0,51,102,0.20);
+    --ink: #002244;
+    --ink2: #3A5A7C;
+    --ink3: #7A9AB8;
+    --accent: #003A7A;
+    --accent-bg: #E6EDF5;
+    --accent-border: rgba(0,58,122,0.22);
+    --yellow: #F5C400;
+    --yellow-dark: #C49A00;
+    --yellow-bg: #FFFBE6;
+    --yellow-border: rgba(196,154,0,0.30);
+    --green: #1A6B3C;
+    --green-bg: #E8F5EE;
+    --green-border: rgba(26,107,60,0.22);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-xs: 5px;
+    --shadow: 0 1px 3px rgba(0,34,68,0.08), 0 4px 16px rgba(0,34,68,0.06);
+    --shadow-sm: 0 1px 2px rgba(0,34,68,0.07);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    background: #002244;
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 3px solid var(--yellow);
+  }
+  .header-logo {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .header-logo strong {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  .header-logo span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.38);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .header-pill {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Layout ── */
+  .wrap {
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ── Settings toggle ── */
+  .settings-toggle {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink2);
+    transition: background 0.12s, border-color 0.12s;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .settings-toggle:hover { background: var(--surface2); border-color: var(--border-strong); }
+  .settings-toggle .left { display: flex; align-items: center; gap: 8px; }
+  .settings-toggle .gear { font-size: 14px; }
+  .settings-toggle .arr { font-size: 10px; color: var(--ink3); transition: transform 0.2s; }
+  .settings-toggle.open .arr { transform: rotate(180deg); }
+  .settings-panel { display: none; }
+  .settings-panel.open { display: block; }
+
+  .settings-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  .settings-sub {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    color: var(--ink3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .settings-note {
+    font-size: 12px;
+    color: var(--ink3);
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+  .settings-note a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-border); }
+
+  /* ── Form elements ── */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.10em;
+    color: var(--ink3);
+    text-transform: uppercase;
+  }
+  .field input,
+  .field textarea {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    transition: border-color 0.12s, background 0.12s;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,58,122,0.10);
+  }
+  .field textarea { resize: vertical; min-height: 84px; }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .input-row input { flex: 1; }
+
+  /* ── Save badge ── */
+  .save-badge {
+    display: none;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    background: var(--green-bg);
+    color: var(--green);
+    border-radius: 20px;
+    padding: 3px 10px;
+    border: 1px solid var(--green-border);
+    margin-top: 6px;
+  }
+
+  .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .s-grid .full { grid-column: 1/-1; }
+
+  /* ── Scan zone ── */
+  .scan-zone {
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg);
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .scan-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+  .scan-zone.has-image { padding: 12px; border-style: solid; }
+  .scan-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--yellow-bg);
+    border: 1px solid var(--yellow-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 22px;
+  }
+  .scan-label { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .scan-sub { font-size: 12px; color: var(--ink3); }
+  #preview { max-width: 100%; max-height: 220px; border-radius: 10px; display: none; }
+  #fileInput { display: none; }
+
+  /* ── Form grid ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field.full { grid-column: 1 / -1; }
+
+  /* ── Divider ── */
+  hr.form-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  /* ── Notes with mic ── */
+  .notes-wrap { position: relative; }
+  .notes-wrap textarea { padding-right: 46px; }
+  .mic-btn {
+    position: absolute;
+    right: 9px;
+    top: 9px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .mic-btn:hover { border-color: var(--ink2); background: var(--surface2); }
+  .mic-btn.recording {
+    border-color: #d63939;
+    background: #fef0f0;
+    animation: mic-pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(214,57,57,0.3); }
+    50%      { box-shadow: 0 0 0 5px rgba(214,57,57,0); }
+  }
+  .mic-hint {
+    font-size: 11px;
+    color: var(--ink3);
+    margin-top: 5px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .mic-hint.err { color: #d63939; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 10px;
+    letter-spacing: -0.1px;
+  }
+  .btn:disabled { opacity: 0.32; cursor: not-allowed; }
+  .btn:not(:disabled):active { transform: scale(0.99); }
+
+  .btn-dark {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-dark:not(:disabled):hover { background: #002f6b; }
+
+  .btn-accent {
+    background: var(--yellow);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .btn-accent:not(:disabled):hover { background: #e6b800; }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+  }
+  .btn-green:not(:disabled):hover { opacity: 0.9; }
+
+  .sm-btn {
+    padding: 8px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: opacity 0.12s;
+    flex-shrink: 0;
+  }
+  .sm-btn:hover { background: #002f6b; }
+
+  /* ── Status ── */
+  .status {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    min-height: 18px;
+    color: var(--ink3);
+    margin-top: 8px;
+    letter-spacing: 0.01em;
+  }
+  .status.loading { color: #1e6fcc; }
+  .status.error { color: #c0392b; }
+  .status.ok { color: var(--green); font-weight: 500; }
+
+  /* ── Step indicator ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--ink3);
+  }
+  .step.active { color: var(--ink); }
+  .step-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    flex-shrink: 0;
+    color: var(--ink3);
+    background: var(--surface);
+  }
+  .step.active .step-dot {
+    background: var(--yellow);
+    border-color: var(--yellow);
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .step.done .step-dot {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    font-size: 12px;
+  }
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 6px;
+    min-width: 16px;
+  }
+
+  /* ── Recipient row ── */
+  .recipient-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-top: 16px;
+  }
+
+  /* ── code ── */
+  code {
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--ink2);
+    border: 1px solid var(--border);
+  }
+
+  @media (max-width: 480px) {
+    .form-grid, .s-grid { grid-template-columns: 1fr; }
+    .field.full, .s-grid .full { grid-column: 1; }
+    .steps { display: none; }
+  }
+
+  /* ── Recipient list ── */
+  .recipient-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .rcpt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    background: var(--bg);
+    user-select: none;
+  }
+  .rcpt-row:hover { background: var(--accent-bg); border-color: var(--border-strong); }
+  .rcpt-row input[type="checkbox"] {
+    width: 17px; height: 17px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .rcpt-info { display: flex; flex-direction: column; gap: 1px; }
+  .rcpt-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .rcpt-email { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--ink3); }
+  .rcpt-all-row {
+    border-color: var(--yellow-border);
+    background: var(--yellow-bg);
+    margin-top: 4px;
+  }
+  .rcpt-all-row:hover { background: #fff8d0; border-color: var(--yellow-dark); }
+  .rcpt-all-row .rcpt-name { color: var(--ink); }
+  .rcpt-all-row input[type="checkbox"] { accent-color: var(--yellow-dark); }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <strong>Briklis</strong>
+    <span>veletrhy</span>
+  </div>
+  <div class="header-pill">v1.0</div>
+</header>
+
+<div class="wrap">
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-dot">1</div>
+      <span>Skenovat</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step2">
+      <div class="step-dot">2</div>
+      <span>Vyplnit</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step3">
+      <div class="step-dot">3</div>
+      <span>Odeslat</span>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section-label">Nastavení</div>
+  <div class="card">
+    <button class="settings-toggle" id="sToggle" onclick="toggleSettings()">
+      <span class="left"><span class="gear">⚙</span> API klíče &amp; integrace</span>
+      <span class="arr">▾</span>
+    </button>
+    <div class="settings-panel" id="sPanel">
+
+      <div class="settings-sub">EmailJS — odesílání e-mailů</div>
+      <p class="settings-note">
+        Bezplatný účet na <a href="https://www.emailjs.com" target="_blank">emailjs.com</a>.
+        Šablona: HTML tělo jako <code>{{html_content}}</code>, předmět jako <code>{{subject}}</code>.
+      </p>
+      <div class="s-grid">
+        <div class="field">
+          <label>Public Key</label>
+          <input type="password" id="ejsPublic" placeholder="abc123…" />
+        </div>
+        <div class="field">
+          <label>Service ID</label>
+          <input type="text" id="ejsService" placeholder="service_xxxxxx" />
+        </div>
+        <div class="field full">
+          <label>Template ID</label>
+          <input type="text" id="ejsTemplate" placeholder="template_xxxxxx" />
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <button class="sm-btn" onclick="saveEmailJS()">Uložit EmailJS</button>
+        <span id="eSaved" class="save-badge" style="display:none">✓ Uloženo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="section-label">Krok 1 — Vizitka</div>
+  <div class="card">
+    <div class="scan-zone" id="scanZone" onclick="document.getElementById('fileInput').click()">
+      <div id="scanPrompt">
+        <div class="scan-icon">📷</div>
+        <div class="scan-label">Vyfotit nebo nahrát vizitku</div>
+        <div class="scan-sub">Klikni nebo přetáhni obrázek</div>
+      </div>
+      <img id="preview" alt="Náhled vizitky" />
+    </div>
+    <input type="file" id="fileInput" accept="image/*" capture="environment" />
+    <button class="btn btn-accent" id="extractBtn" onclick="scanCard()" disabled>
+      ✦ Načíst údaje z vizitky
+    </button>
+    <div class="status" id="scanStatus"></div>
+  </div>
+
+  <!-- Form -->
+  <div class="section-label">Krok 2 — Kontaktní údaje</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="field full">
+        <label>Veletrh</label>
+        <input type="text" id="f-veletrh" placeholder="Název veletrhu" oninput="localStorage.setItem('briklis_veletrh', this.value)" />
+      </div>
+      <div class="field">
+        <label>Firma</label>
+        <input type="text" id="f-firma" placeholder="Název společnosti" />
+      </div>
+      <div class="field">
+        <label>IČO</label>
+        <input type="text" id="f-ico" placeholder="12345678" />
+      </div>
+      <div class="field">
+        <label>Kontaktní osoba</label>
+        <input type="text" id="f-kontakt" placeholder="Jméno a příjmení" />
+      </div>
+      <div class="field">
+        <label>Pozice</label>
+        <input type="text" id="f-pozice" placeholder="Funkce / titul" />
+      </div>
+      <div class="field">
+        <label>Telefon</label>
+        <input type="tel" id="f-telefon" placeholder="+420 …" />
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="f-email" placeholder="jmeno@firma.cz" />
+      </div>
+      <div class="field full">
+        <label>Adresa firmy</label>
+        <input type="text" id="f-adresa" placeholder="Ulice, město, PSČ, země" />
+      </div>
+      <div class="field full">
+        <label>Poznámky</label>
+        <div class="notes-wrap">
+          <textarea id="f-poznamky" placeholder="Web, zájem o produkt, další info…"></textarea>
+          <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Hlasové diktování">🎤</button>
+        </div>
+        <div class="mic-hint" id="micHint">Klikni na 🎤 pro hlasové diktování (čeština)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send -->
+  <div class="section-label">Krok 3 — Odeslat</div>
+  <div class="card">
+    <div class="field" style="margin-bottom:12px"><label>Příjemci</label></div>
+    <div class="recipient-list">
+      <label class="rcpt-row">
+        <input type="checkbox" class="rcpt-cb" value="daniel.medek@briklis.cz" />
+        <span class="rcpt-info"><span class="rcpt-name">Daniel Medek</span><span class="rcpt-email">daniel.medek@briklis.cz</span></span>
+      </label>
+      <label class="rcpt-row">
+        <input type="checkbox" class="rcpt-cb" value="ales.svatek@briklis.cz" />
+        <span class="rcpt-info"><span class="rcpt-name">Aleš Svátek</span><span class="rcpt-email">ales.svatek@briklis.cz</span></span>
+      </label>
+      <label class="rcpt-row">
+        <input type="checkbox" class="rcpt-cb" value="martin.sabiniok@briklis.cz" />
+        <span class="rcpt-info"><span class="rcpt-name">Martin Sabiniok</span><span class="rcpt-email">martin.sabiniok@briklis.cz</span></span>
+      </label>
+      <label class="rcpt-row rcpt-all-row">
+        <input type="checkbox" id="rcptAll" onchange="toggleAll(this)" />
+        <span class="rcpt-info"><span class="rcpt-name">Zaslat všem</span><span class="rcpt-email">všichni 3 příjemci</span></span>
+      </label>
+    </div>
+    <button class="btn btn-green" id="sendBtn" onclick="sendEmail()">
+      ↗ Odeslat formulář e-mailem
+    </button>
+    <div class="status" id="sendStatus"></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleAll(cb) {
+  document.querySelectorAll('.rcpt-cb').forEach(c => c.checked = cb.checked);
+}
+
+function loadKeys() {
+  const p = localStorage.getItem('briklis_ejs_public');
+  const s = localStorage.getItem('briklis_ejs_service');
+  const t = localStorage.getItem('briklis_ejs_template');
+  const v = localStorage.getItem('briklis_veletrh');
+  if (p) { document.getElementById('ejsPublic').value = '●'.repeat(18); emailjs.init(p); }
+  if (s) document.getElementById('ejsService').value = s;
+  if (t) document.getElementById('ejsTemplate').value = t;
+  if (p && s && t) showBadge('eSaved');
+  if (v) document.getElementById('f-veletrh').value = v;
+  updateExtractBtn();
+}
+
+function showBadge(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'inline-block';
+}
+
+function saveEmailJS() {
+  const p = document.getElementById('ejsPublic').value.trim();
+  const s = document.getElementById('ejsService').value.trim();
+  const t = document.getElementById('ejsTemplate').value.trim();
+  if (p && !p.includes('●')) {
+    localStorage.setItem('briklis_ejs_public', p);
+    emailjs.init(p);
+    document.getElementById('ejsPublic').value = '●'.repeat(18);
+  }
+  if (s) localStorage.setItem('briklis_ejs_service', s);
+  if (t) localStorage.setItem('briklis_ejs_template', t);
+  showBadge('eSaved');
+}
+
+function toggleSettings() {
+  document.getElementById('sToggle').classList.toggle('open');
+  document.getElementById('sPanel').classList.toggle('open');
+}
+
+let imageBase64 = null, imageMimeType = 'image/jpeg';
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  imageMimeType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageBase64 = ev.target.result.split(',')[1];
+    const prev = document.getElementById('preview');
+    prev.src = ev.target.result;
+    prev.style.display = 'block';
+    document.getElementById('scanPrompt').style.display = 'none';
+    document.getElementById('scanZone').classList.add('has-image');
+    setStatus('scanStatus', '', '');
+    updateExtractBtn();
+    setStep(1);
+  };
+  reader.readAsDataURL(file);
+});
+
+const sz = document.getElementById('scanZone');
+sz.addEventListener('dragover', e => { e.preventDefault(); sz.style.borderColor = 'var(--accent)'; });
+sz.addEventListener('dragleave', () => { sz.style.borderColor = ''; });
+sz.addEventListener('drop', e => {
+  e.preventDefault(); sz.style.borderColor = '';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) {
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    document.getElementById('fileInput').dispatchEvent(new Event('change'));
+  }
+});
+
+function updateExtractBtn() {
+  document.getElementById('extractBtn').disabled = !imageBase64;
+}
+
+function setStatus(id, msg, cls) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + cls;
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById('step' + i);
+    s.classList.remove('active', 'done');
+    if (i < n) s.classList.add('done'), s.querySelector('.step-dot').textContent = '✓';
+    else if (i === n) s.classList.add('active');
+    else {
+      const dot = s.querySelector('.step-dot');
+      if (dot.textContent === '✓') { dot.textContent = i; }
+    }
+  }
+}
+
+async function scanCard() {
+  document.getElementById('extractBtn').disabled = true;
+  setStatus('scanStatus', 'Čtu vizitku…', 'loading');
+  try {
+    const res = await fetch('https://briklis-proxy.martin-sabiniok.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5', max_tokens: 1000,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: imageMimeType, data: imageBase64 } },
+          { type: 'text', text: `Extract all info from this business card. Return ONLY valid JSON:
+{"firma":"company","ico":"company reg number or empty","kontakt":"full name","pozice":"job title","telefon":"phone","email":"email","adresa":"full address or empty","poznamky":"website or other info"}
+No markdown, no backticks. Pure JSON only.` }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'API chyba ' + res.status);
+    const text = (data.content || []).find(b => b.type === 'text')?.text || '{}';
+    const info = JSON.parse(text.replace(/```json|```/g, '').trim());
+    document.getElementById('f-firma').value    = info.firma    || '';
+    document.getElementById('f-ico').value      = info.ico      || '';
+    document.getElementById('f-kontakt').value  = info.kontakt  || '';
+    document.getElementById('f-pozice').value   = info.pozice   || '';
+    document.getElementById('f-telefon').value  = info.telefon  || '';
+    document.getElementById('f-email').value    = info.email    || '';
+    document.getElementById('f-adresa').value   = info.adresa   || '';
+    document.getElementById('f-poznamky').value = info.poznamky || '';
+    setStatus('scanStatus', '✓ Hotovo — zkontroluj údaje.', 'ok');
+    setStep(2);
+  } catch(err) {
+    setStatus('scanStatus', 'Chyba: ' + err.message, 'error');
+  }
+  updateExtractBtn();
+}
+
+function buildEmail(d) {
+  const row = (icon, label, val) => !val ? '' : `
+  <tr>
+    <td style="padding:9px 16px 9px 20px;vertical-align:top;font-size:18px;width:44px;line-height:1">${icon}</td>
+    <td style="padding:9px 0;vertical-align:top;font-size:15px;color:#111;border-bottom:1px solid #f0ede8">
+      <strong style="color:#1a1a18">${label}:</strong>&nbsp;${val}
+    </td>
+  </tr>`;
+  const notesHtml = !d.poznamky ? '' : `
+  <tr>
+    <td style="padding:9px 16px 9px 20px;vertical-align:top;font-size:18px;width:44px;line-height:1">📝</td>
+    <td style="padding:9px 0;vertical-align:top;font-size:15px;color:#111">
+      <strong style="color:#1a1a18;display:block;margin-bottom:5px">Poznámky:</strong>
+      <span style="white-space:pre-line;color:#333">${d.poznamky}</span>
+    </td>
+  </tr>`;
+  return `<!DOCTYPE html>
+<html lang="cs"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#EEF2F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF2F7;padding:32px 16px"><tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;border:1px solid rgba(0,51,102,0.10);overflow:hidden;border-top:4px solid #F5C400">
+  <tr><td style="padding:22px 24px;border-bottom:1px solid #E6EDF5">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="width:48px;vertical-align:middle">
+        <div style="width:44px;height:44px;background:#FFFBE6;border-radius:10px;text-align:center;line-height:46px;font-size:22px;border:1px solid rgba(196,154,0,0.30)">📥</div>
+      </td>
+      <td style="padding-left:14px;vertical-align:middle">
+        <div style="font-size:19px;font-weight:600;color:#002244;letter-spacing:-0.3px">Nová poptávka z veletrhu</div>
+        <div style="font-size:12px;color:#7A9AB8;margin-top:3px;font-family:monospace">Briklis · veletržní karta</div>
+      </td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:6px 0 12px">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${row('🏢','Firma', d.firma)}
+      ${d.ico ? row('🔢','IČO', d.ico) : ''}
+      ${d.adresa ? row('📍','Adresa firmy', d.adresa) : ''}
+      ${row('🏛️','Veletrh', d.veletrh)}
+      ${row('👤','Kontaktní osoba', d.kontakt)}
+      ${row('📞','Telefon', d.telefon)}
+      ${row('✉️','E-mail', d.email)}
+      ${notesHtml}
+    </table>
+  </td></tr>
+  <tr><td style="padding:14px 20px;border-top:1px solid #E6EDF5;font-size:12px;color:#7A9AB8;font-family:monospace">
+    Odesláno na: <strong style="color:#3A5A7C">${d.recipient}</strong>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+async function sendEmail() {
+  const svcId  = localStorage.getItem('briklis_ejs_service');
+  const tplId  = localStorage.getItem('briklis_ejs_template');
+  const pubKey = localStorage.getItem('briklis_ejs_public');
+  if (!svcId || !tplId || !pubKey) { setStatus('sendStatus', 'Ulož EmailJS přihlašovací údaje v nastavení.', 'error'); return; }
+  const checked = [...document.querySelectorAll('.rcpt-cb:checked')].map(cb => cb.value);
+  if (checked.length === 0) { setStatus('sendStatus', 'Vyber alespoň jednoho příjemce.', 'error'); return; }
+  const veletrh = document.getElementById('f-veletrh').value;
+  if (veletrh) localStorage.setItem('briklis_veletrh', veletrh);
+  const d = {
+    firma: document.getElementById('f-firma').value,
+    ico: document.getElementById('f-ico').value,
+    adresa: document.getElementById('f-adresa').value,
+    veletrh: document.getElementById('f-veletrh').value,
+    kontakt: document.getElementById('f-kontakt').value,
+    pozice: document.getElementById('f-pozice').value,
+    telefon: document.getElementById('f-telefon').value,
+    email: document.getElementById('f-email').value,
+    poznamky: document.getElementById('f-poznamky').value,
+    recipient
+  };
+  document.getElementById('sendBtn').disabled = true;
+  setStatus('sendStatus', 'Odesílám…', 'loading');
+  try {
+    emailjs.init(pubKey);
+    for (const rcpt of checked) {
+      await emailjs.send(svcId, tplId, {
+        to_email: rcpt,
+        subject: `Nová poptávka z veletrhu: ${d.firma || d.kontakt || 'nový kontakt'}`,
+        html_content: buildEmail({...d, recipient: rcpt}),
+        firma: d.firma,
+        kontakt: d.kontakt,
+        veletrh: d.veletrh,
+      });
+    }
+    setStatus('sendStatus', `✓ Odesláno (${checked.length} příjemce${checked.length > 1 ? 'm' : ''})`, 'ok');
+    setStep(3);
+  } catch(err) {
+    console.error(err);
+    setStatus('sendStatus', 'Chyba: ' + (err.text || err.message || JSON.stringify(err)), 'error');
+  }
+  document.getElementById('sendBtn').disabled = false;
+}
+
+let recognition = null, isRecording = false;
+
+function initSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'cs-CZ';
+  r.continuous = true;
+  r.interimResults = true;
+  let baseText = '';
+  r.onstart = () => {
+    baseText = document.getElementById('f-poznamky').value;
+    if (baseText && !baseText.endsWith('\n')) baseText += '\n';
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+    const h = document.getElementById('micHint');
+    h.textContent = '● Nahrávám — mluv česky. Klikni pro zastavení.';
+    h.className = 'mic-hint err';
+  };
+  r.onresult = e => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t; else interim += t;
+    }
+    if (final) baseText += final + ' ';
+    document.getElementById('f-poznamky').value = baseText + interim;
+  };
+  r.onerror = err => {
+    stopMic();
+    const msgs = { 'not-allowed': 'Mikrofon odepřen — povol ho v nastavení prohlížeče.', 'no-speech': 'Žádný hlas — zkus znovu.', 'network': 'Chyba sítě.' };
+    const h = document.getElementById('micHint');
+    h.textContent = msgs[err.error] || 'Chyba: ' + err.error;
+    h.className = 'mic-hint err';
+  };
+  r.onend = () => { if (isRecording) r.start(); };
+  return r;
+}
+
+function toggleMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    const h = document.getElementById('micHint');
+    h.textContent = 'Diktování nepodporováno — použij Chrome nebo Edge.';
+    h.className = 'mic-hint err';
+    return;
+  }
+  if (isRecording) { stopMic(); return; }
+  if (!recognition) recognition = initSpeech();
+  isRecording = true;
+  recognition.start();
+}
+
+function stopMic() {
+  isRecording = false;
+  if (recognition) recognition.stop();
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  const h = document.getElementById('micHint');
+  h.textContent = 'Klikni na 🎤 pro hlasové diktování (čeština)';
+  h.className = 'mic-hint';
+}
+
+loadKeys();
+</script>
+</body>
+</html>
